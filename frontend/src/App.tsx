@@ -1,54 +1,81 @@
-import { useEffect, useState } from "react";
+import { useState } from 'react';
+import { Guitar, CartItem } from './types';
+import { GuitarCard } from './Components/Card/Card';
+import { Cart } from './Components/Korzina/korzina';
 
-type HealthResponse = {
-  status: string;
-  service: string;
-};
+const MOCK_GUITARS: Guitar[] = [
+  { id: 1, name: 'Fender Stratocaster', brand: 'Fender', type: 'electric', price: 120000, image: 'https://unsplash.com', description: 'Классическая электрогитара.' },
+  { id: 2, name: 'Gibson Les Paul', brand: 'Gibson', type: 'electric', price: 180000, image: 'https://unsplash.com', description: 'Плотный, жирный звук.' },
+  { id: 3, name: 'Yamaha F310', brand: 'Yamaha', type: 'acoustic', price: 18000, image: 'https://unsplash.com', description: 'Идеальная акустика для новичков.' },
+  { id: 4, name: 'Ibanez Soundgear', brand: 'Ibanez', type: 'bass', price: 45000, image: 'https://unsplash.com', description: 'Удобный четырехструнный бас.' }
+];
 
-const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+export default function App() {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedType, setSelectedType] = useState<string>('all');
 
-function App() {
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const handleAddToCart = (guitar: Guitar) => {
+    setCart((prevCart) => {
+      const existing = prevCart.find((item) => item.guitar.id === guitar.id);
+      if (existing) {
+        return prevCart.map((item) =>
+          item.guitar.id === guitar.id ? { ...item, quantity: item.quantity + 1 } : item
+        );
+      }
+      return [...prevCart, { guitar, quantity: 1 }];
+    });
+  };
 
-  useEffect(() => {
-    fetch(`${apiUrl}/api/health/`)
-      .then((response) => {
-        if (!response.ok) throw new Error("API returned an error");
-        return response.json() as Promise<HealthResponse>;
-      })
-      .then(setHealth)
-      .catch((requestError: Error) => setError(requestError.message));
-  }, []);
+  const handleRemoveFromCart = (id: number) => {
+    setCart((prevCart) => prevCart.filter((item) => item.guitar.id !== id));
+  };
+
+  const handleUpdateQuantity = (id: number, delta: number) => {
+    setCart((prevCart) =>
+      prevCart.map((item) =>
+        item.guitar.id === id ? { ...item, quantity: item.quantity + delta } : item
+      )
+    );
+  };
+
+  const filteredGuitars = selectedType === 'all' 
+    ? MOCK_GUITARS 
+    : MOCK_GUITARS.filter(g => g.type === selectedType);
 
   return (
-    <main className="shell">
-      <section className="hero">
-        <p className="eyebrow">FULL-STACK STARTER / 001</p>
-        <h1>Django meets React.</h1>
-        <p className="lede">
-          A clean starting point for products that need a Python API, a real database,
-          and a fast TypeScript interface.
-        </p>
-        <div className="stack-list" aria-label="Technology stack">
-          <span>Django</span>
-          <span>PostgreSQL</span>
-          <span>Docker</span>
-          <span>Vite + TS</span>
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+      <header style={{ borderBottom: '20px', paddingBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h1>МАГАзин гитар</h1>
+        <div>
+          <button onClick={() => setSelectedType('all')} style={{ marginRight: '5px' }}>Все</button>
+          <button onClick={() => setSelectedType('acoustic')} style={{ marginRight: '5px' }}>Акустические</button>
+          <button onClick={() => setSelectedType('electric')} style={{ marginRight: '5px' }}>Электро</button>
+          <button onClick={() => setSelectedType('bass')}>Басгитары</button>
         </div>
-      </section>
+      </header>
 
-      <aside className="status-panel">
-        <div className="status-heading">
-          <span className={`status-dot ${health ? "online" : error ? "offline" : "pending"}`} />
-          <span>API status</span>
+      <main style={{ display: 'grid', gridTemplateColumns: '3fr 1fr', gap: '30px', marginTop: '20px' }}>
+        <div>
+          <h2>Каталог</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+            {filteredGuitars.map((guitar) => (
+              <GuitarCard 
+                key={guitar.id} 
+                guitar={guitar} 
+                onAddToCart={handleAddToCart} 
+              />
+            ))}
+          </div>
         </div>
-        <strong>{health ? "Connected" : error ? "Unavailable" : "Checking..."}</strong>
-        <p>{health ? `${health.service} answered with ${health.status}.` : error ?? "Waiting for Django..."}</p>
-        <code>GET /api/health/</code>
-      </aside>
-    </main>
+
+        <aside>
+          <Cart 
+            items={cart} 
+            onRemove={handleRemoveFromCart} 
+            onUpdateQuantity={handleUpdateQuantity} 
+          />
+        </aside>
+      </main>
+    </div>
   );
 }
-
-export default App;
