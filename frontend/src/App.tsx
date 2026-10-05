@@ -38,7 +38,6 @@ export default function App() {
     );
   };
 
-  // Фильтрация товаров
   const filteredGuitars = selectedType === 'all' 
     ? MOCK_GUITARS 
     : MOCK_GUITARS.filter(g => g.type === selectedType);
